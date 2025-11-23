@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  Flame, 
-  Building2, 
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Flame,
+  Building2,
   BarChart,
-  Globe, 
+  Globe,
+  X,
   Info,
   Zap,
   Target,
   Menu,
   Bell,
   Search,
+  Share2,
   Sparkles,
   Loader,
   RefreshCw,
@@ -28,7 +30,7 @@ import {
   Clock
 } from 'lucide-react';
 
-// --- 1. 資料定義區 ---
+// --- 1. 資料定義 ---
 
 type EventType = 'critical' | 'hot' | 'corporate' | 'macro' | 'holiday';
 type Market = 'US' | 'TW' | 'Global';
@@ -47,10 +49,7 @@ interface StockEvent {
   strategy: string;
 }
 
-// ★★★ 區域 A: 每月更新 (Monthly Updates) - 用於日曆 ★★★
-// 更新頻率：每月月底更新下個月大事
 const monthlyEvents: StockEvent[] = [
-  // --- 11月 ---
   {
     id: '11-24-bbu',
     date: '2025-11-24',
@@ -104,8 +103,6 @@ const monthlyEvents: StockEvent[] = [
     description: '00878/00940 成分股調整生效，尾盤將爆大量。同時為集團作帳慣性發動日。',
     strategy: '留意尾盤爆量下殺的績優股(投信被動賣超)，隔日易有反彈行情。',
   },
-
-  // --- 12月 ---
   {
     id: '12-04-avgo',
     date: '2025-12-04',
@@ -160,8 +157,6 @@ const monthlyEvents: StockEvent[] = [
     description: 'HBM 排擠效應導致傳統 DRAM 供給吃緊，報價看漲。',
     strategy: '若美光財報指引佳，隔日開盤直接搶進記憶體族群。',
   },
-  
-  // --- 1月 ---
   {
     id: '01-06-ces',
     date: '2026-01-06',
@@ -195,10 +190,40 @@ const monthlyEvents: StockEvent[] = [
     description: '關注 Robotaxi 進展與毛利率回升狀況。',
     strategy: '若指引佳，資金將回流基期極低的車用電子族群。',
   },
+  {
+    id: '01-27-mediatek',
+    date: '2026-01-27',
+    title: '聯發科法說 & IP股',
+    market: 'TW',
+    type: 'hot',
+    trend: 'bull',
+    relatedStocks: ['世芯-KY (3661)', '創意 (3443)'],
+    description: '聚焦 ASIC 業務與天璣 9400 銷售。',
+    strategy: '高價 IP 股通常在法說季前後會有法人回補動作。',
+  },
+  {
+    id: '01-28-fomc-jan',
+    date: '2026-01-28',
+    title: 'FOMC 利率決議',
+    market: 'US',
+    type: 'macro',
+    trend: 'neutral',
+    description: '2026 年首次會議，市場通常觀望。',
+    strategy: '觀察鮑爾對新年度經濟的看法。',
+  },
+  {
+    id: '01-29-apple',
+    date: '2026-01-29',
+    title: 'Apple 財報',
+    market: 'US',
+    type: 'corporate',
+    trend: 'bear',
+    relatedStocks: ['大立光 (3008)', '鴻海 (2317)'],
+    description: 'iPhone 銷售狀況與大中華區競爭壓力。',
+    strategy: '若指引保守，蘋概股恐承壓，資金可能撤出轉向 AI 股。',
+  }
 ];
 
-// ★★★ 區域 B: 每日熱點 (Daily Hot) ★★★
-// 更新頻率：每日盤後更新 (反映當下成交量與話題)
 const dailyHotTrends = [
   {
     id: 'hot-1',
@@ -234,8 +259,6 @@ const dailyHotTrends = [
   }
 ];
 
-// ★★★ 區域 C: 每日策略 (Daily Strategy) ★★★
-// 更新頻率：每日開盤前/盤後 (針對當日盤勢)
 const dailyStrategies = [
   {
     id: 'st-1',
@@ -262,8 +285,6 @@ const dailyStrategies = [
     target: '弱勢股'
   }
 ];
-
-// --- 2. UI 元件 ---
 
 const TypeBadge = ({ type }: { type: EventType }) => {
   const styles = {
@@ -309,8 +330,6 @@ const TrendIcon = ({ trend }: { trend: Trend }) => {
     return <div className="flex items-center gap-1 text-slate-400 text-xs font-bold"><Activity size={14} /> 觀望</div>;
 };
 
-// --- 3. Gemini API Hook ---
-
 const useGeminiStrategy = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -321,7 +340,7 @@ const useGeminiStrategy = () => {
     setError(null);
     setAnalysis(null);
 
-    const apiKey = ""; // Environment variable
+    const apiKey = ""; // 請在此填入您的 Gemini API Key
     const prompt = `
       分析股市事件：${event.title}
       市場：${event.market}
@@ -361,20 +380,18 @@ const useGeminiStrategy = () => {
   return { fetchStrategy, loading, error, analysis, setAnalysis };
 };
 
-// --- 4. 分頁內容元件 ---
-
-const CalendarView = ({ 
-  prevMonth, 
-  nextMonth, 
-  days, 
-  selectedDayEvents, 
-  year, 
-  month, 
-  selectedDate, 
-  setSelectedEvent 
+const CalendarView = ({
+  currentDate,
+  prevMonth,
+  nextMonth,
+  days,
+  selectedDayEvents,
+  year,
+  month,
+  selectedDate,
+  setSelectedEvent
 }: any) => (
   <div className="flex-1 overflow-y-auto pb-20 no-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
-    {/* Month Selector */}
     <div className="flex items-center justify-between px-6 py-4">
       <button onClick={prevMonth} className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 active:scale-95 transition-all">
         <ChevronLeft size={20} />
@@ -387,19 +404,16 @@ const CalendarView = ({
       </button>
     </div>
 
-    {/* Weekday Header */}
     <div className="grid grid-cols-7 text-center px-4 mb-2">
       {['日','一','二','三','四','五','六'].map(d => (
         <span key={d} className="text-[11px] font-bold text-slate-500">{d}</span>
       ))}
     </div>
 
-    {/* Calendar Grid */}
     <div className="grid grid-cols-7 px-4 gap-y-1 mb-6">
       {days}
     </div>
 
-    {/* Event List Section */}
     <div className="bg-slate-900/50 rounded-t-[32px] min-h-[400px] border-t border-slate-800 p-6 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -423,14 +437,14 @@ const CalendarView = ({
             </div>
         ) : (
           selectedDayEvents.map((event: StockEvent) => (
-            <div 
+            <div
               key={event.id}
               onClick={() => setSelectedEvent(event)}
               className="bg-slate-800 rounded-2xl p-4 border border-slate-700/50 active:scale-98 transition-transform cursor-pointer relative overflow-hidden group"
             >
-              <div className={`absolute top-0 left-0 w-1 h-full 
-                ${event.type === 'critical' ? 'bg-rose-500' : 
-                  event.type === 'hot' ? 'bg-orange-500' : 'bg-blue-500'}`} 
+              <div className={`absolute top-0 left-0 w-1 h-full
+                ${event.type === 'critical' ? 'bg-rose-500' :
+                  event.type === 'hot' ? 'bg-orange-500' : 'bg-blue-500'}`}
               />
 
               <div className="flex justify-between items-start mb-3 pl-3">
@@ -467,7 +481,6 @@ const CalendarView = ({
 );
 
 const HotView = () => {
-  // 使用 "每日更新" 的資料庫，而非從月曆推導
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -478,7 +491,7 @@ const HotView = () => {
           <Clock size={10} /> Daily Update
         </span>
       </div>
-      
+
       <div className="space-y-4">
         {dailyHotTrends.map((sector, idx) => (
           <div key={sector.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden hover:border-orange-500/30 transition-colors cursor-pointer group">
@@ -490,19 +503,18 @@ const HotView = () => {
                 <h3 className="text-lg font-bold text-slate-100">{sector.name}</h3>
                 <span className="text-[10px] text-slate-500">{sector.reason}</span>
               </div>
-              {sector.trend === 'up' ? <TrendingUp size={18} className="text-rose-500"/> : 
+              {sector.trend === 'up' ? <TrendingUp size={18} className="text-rose-500"/> :
                sector.trend === 'down' ? <TrendingDown size={18} className="text-emerald-500"/> :
                <Activity size={18} className="text-amber-500"/>}
             </div>
-            
-            {/* Heat Bar */}
+
             <div className="w-full bg-slate-800 h-2 rounded-full mb-3 overflow-hidden">
-              <div 
-                className={`h-full rounded-full ${idx === 0 ? 'bg-gradient-to-r from-rose-500 to-orange-500' : 'bg-blue-500'}`} 
+              <div
+                className={`h-full rounded-full ${idx === 0 ? 'bg-gradient-to-r from-rose-500 to-orange-500' : 'bg-blue-500'}`}
                 style={{ width: `${sector.strength}%` }}
               />
             </div>
-            
+
             <div className="flex flex-wrap gap-2 mt-2">
               {sector.stocks.map((stock, i) => (
                 <span key={i} className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700">
@@ -518,7 +530,6 @@ const HotView = () => {
 };
 
 const StrategyView = () => {
-  // 使用 "每日更新" 的策略資料庫
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -547,8 +558,7 @@ const StrategyView = () => {
                <span className="text-[10px] text-slate-500">關注: {s.target}</span>
                <ChevronRight size={14} className="text-slate-600 group-hover:text-blue-400" />
             </div>
-            
-            {/* Decorative bg */}
+
             <div className="absolute -bottom-4 -right-4 text-slate-800/30 transform rotate-12 group-hover:scale-110 transition-transform">
                <Target size={80} />
             </div>
@@ -564,7 +574,6 @@ const SettingsView = () => {
   const [darkModeEnabled, setDarkModeEnabled] = useState(true);
   const [showModal, setShowModal] = useState<{title: string, content: string} | null>(null);
 
-  // Simple toggle handler
   const handleToggle = (setting: string) => {
     if (setting === 'notifications') {
       setNotificationsEnabled(!notificationsEnabled);
@@ -579,7 +588,6 @@ const SettingsView = () => {
 
   const handleLogout = () => {
     if (window.confirm('確定要登出目前帳號嗎？')) {
-      // In a real app, perform logout logic here
       alert('已安全登出');
     }
   };
@@ -589,8 +597,7 @@ const SettingsView = () => {
       <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
         <Settings className="text-slate-400" /> 設定
       </h2>
-      
-      {/* User Profile Card */}
+
       <div className="bg-slate-900 rounded-2xl p-4 mb-6 flex items-center gap-4 border border-slate-800">
         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
           U
@@ -601,10 +608,8 @@ const SettingsView = () => {
         </div>
       </div>
 
-      {/* Settings List */}
       <div className="space-y-2">
-        {/* Notifications */}
-        <button 
+        <button
           onClick={() => handleToggle('notifications')}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
@@ -620,8 +625,7 @@ const SettingsView = () => {
           </div>
         </button>
 
-        {/* Dark Mode */}
-        <button 
+        <button
           onClick={() => handleToggle('darkMode')}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
@@ -637,8 +641,7 @@ const SettingsView = () => {
           </div>
         </button>
 
-        {/* Privacy */}
-        <button 
+        <button
           onClick={() => openModal('隱私權設定', '您的數據僅儲存於本地端，StockCal 不會收集您的個人操作紀錄。詳細條款請參閱官網。')}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
@@ -651,9 +654,8 @@ const SettingsView = () => {
           <ChevronRight size={16} className="text-slate-600" />
         </button>
 
-        {/* Tutorial */}
-        <button 
-          onClick={() => openModal('使用教學', '1. 點擊日曆查看當日大事。\n2. 點擊「熱點」查看資金流向。\n3. 點擊事件可使用 AI 分析功能。')}
+        <button
+          onClick={() => openModal('使用教學', '1. 點擊日曆查看當日大事。\\n2. 點擊「熱點」查看資金流向。\\n3. 點擊事件可使用 AI 分析功能。')}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
           <div className="flex items-center gap-3 text-slate-300">
@@ -665,9 +667,8 @@ const SettingsView = () => {
           <ChevronRight size={16} className="text-slate-600" />
         </button>
 
-        {/* About */}
-        <button 
-          onClick={() => openModal('關於 StockCal', '版本: v6.2.0\n開發團隊: StockCal Team\n聯絡我們: support@stockcal.app')}
+        <button
+          onClick={() => openModal('關於 StockCal', '版本: v6.2.0\\n開發團隊: StockCal Team\\n聯絡我們: support@stockcal.app')}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
           <div className="flex items-center gap-3 text-slate-300">
@@ -679,9 +680,8 @@ const SettingsView = () => {
           </div>
           <ChevronRight size={16} className="text-slate-600" />
         </button>
-        
-        {/* Logout */}
-        <button 
+
+        <button
           onClick={handleLogout}
           className="w-full mt-6 bg-rose-900/20 text-rose-500 p-4 rounded-xl flex items-center justify-center gap-2 font-medium active:bg-rose-900/30 border border-rose-900/30 transition-colors"
         >
@@ -689,7 +689,6 @@ const SettingsView = () => {
         </button>
       </div>
 
-      {/* Simple Modal for Settings Info */}
       {showModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 w-full max-w-sm shadow-2xl">
@@ -697,7 +696,7 @@ const SettingsView = () => {
             <p className="text-slate-400 text-sm whitespace-pre-line mb-6 leading-relaxed">
               {showModal.content}
             </p>
-            <button 
+            <button
               onClick={() => setShowModal(null)}
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors"
             >
@@ -710,15 +709,13 @@ const SettingsView = () => {
   );
 };
 
-// --- 6. 主應用程式 ---
-
 export default function StockCalAndroid() {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 20));
   const [selectedDate, setSelectedDate] = useState<string>('2025-11-24');
   const [selectedEvent, setSelectedEvent] = useState<StockEvent | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [isLoaded, setIsLoaded] = useState(false);
-  
+
   const { fetchStrategy, loading: aiLoading, error: aiError, analysis: aiAnalysis, setAnalysis: setAiAnalysis } = useGeminiStrategy();
 
   useEffect(() => {
@@ -741,24 +738,20 @@ export default function StockCalAndroid() {
 
   const days = [];
   for (let i = 0; i < firstDayOfMonth; i++) days.push(<div key={`empty-${i}`} />);
-  
+
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dayEvents = monthlyEvents.filter(e => e.date === dateStr);
     const isSelected = selectedDate === dateStr;
-    
-    let dotStyle: React.CSSProperties | undefined;
-    if (dayEvents.some(e => e.type === 'critical')) {
-      dotStyle = { backgroundColor: '#f43f5e', boxShadow: '0 0 8px rgba(244,63,94,0.6)', width: '6px', height: '6px', borderRadius: '50%', marginTop: '4px' };
-    } else if (dayEvents.some(e => e.type === 'hot')) {
-      dotStyle = { backgroundColor: '#f97316', width: '6px', height: '6px', borderRadius: '50%', marginTop: '4px' };
-    } else if (dayEvents.length > 0) {
-      dotStyle = { backgroundColor: '#3b82f6', width: '6px', height: '6px', borderRadius: '50%', marginTop: '4px' };
-    }
+
+    let dotColor = '';
+    if (dayEvents.some(e => e.type === 'critical')) dotColor = 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]';
+    else if (dayEvents.some(e => e.type === 'hot')) dotColor = 'bg-orange-500';
+    else if (dayEvents.length > 0) dotColor = 'bg-blue-500';
 
     days.push(
-      <div 
-        key={d} 
+      <div
+        key={d}
         onClick={() => setSelectedDate(dateStr)}
         className={`
           h-14 flex flex-col items-center justify-center rounded-2xl cursor-pointer transition-all relative
@@ -766,7 +759,9 @@ export default function StockCalAndroid() {
         `}
       >
         <span className={`text-sm font-medium ${isSelected ? 'font-bold' : ''}`}>{d}</span>
-        {dotStyle && <div style={dotStyle} />}
+        {dotColor && (
+          <div className={`w-1.5 h-1.5 rounded-full mt-1 ${dotColor}`} />
+        )}
       </div>
     );
   }
@@ -786,8 +781,7 @@ export default function StockCalAndroid() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-950 font-sans text-slate-200 overflow-hidden selection:bg-blue-500/30">
-      
-      {/* Top App Bar */}
+
       <div className="pt-4 pb-2 px-4 bg-slate-950 flex items-center justify-between z-20 sticky top-0 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center shadow-lg shadow-blue-500/20 relative overflow-hidden">
@@ -810,10 +804,9 @@ export default function StockCalAndroid() {
         </div>
       </div>
 
-      {/* Main Content Area with Conditional Rendering */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {activeTab === 'calendar' && (
-          <CalendarView 
+          <CalendarView
             currentDate={currentDate}
             prevMonth={prevMonth}
             nextMonth={nextMonth}
@@ -830,30 +823,29 @@ export default function StockCalAndroid() {
         {activeTab === 'settings' && <SettingsView />}
       </div>
 
-      {/* Bottom Navigation */}
       <div className="h-16 bg-slate-900 border-t border-slate-800 grid grid-cols-4 items-center absolute bottom-0 w-full z-30 shadow-2xl shadow-black">
-        <button 
+        <button
           onClick={() => setActiveTab('calendar')}
           className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'calendar' ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
         >
           <CalendarIcon size={22} strokeWidth={activeTab === 'calendar' ? 2.5 : 2} />
           <span className="text-[10px] font-medium">日曆</span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('hot')}
           className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'hot' ? 'text-orange-500' : 'text-slate-500 hover:text-slate-300'}`}
         >
           <Flame size={22} strokeWidth={activeTab === 'hot' ? 2.5 : 2} />
           <span className="text-[10px] font-medium">熱點</span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('strategy')}
           className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'strategy' ? 'text-emerald-500' : 'text-slate-500 hover:text-slate-300'}`}
         >
           <Target size={22} strokeWidth={activeTab === 'strategy' ? 2.5 : 2} />
           <span className="text-[10px] font-medium">策略</span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('settings')}
           className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'settings' ? 'text-purple-500' : 'text-slate-500 hover:text-slate-300'}`}
         >
@@ -862,38 +854,33 @@ export default function StockCalAndroid() {
         </button>
       </div>
 
-      {/* Detail Modal (Only for Calendar events) */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80" onClick={() => setSelectedEvent(null)}>
-          <div 
-            className="w-full max-w-lg bg-slate-900 rounded-3xl p-6 border-2 border-slate-700 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col"
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-300" onClick={() => setSelectedEvent(null)}>
+          <div
+            className="w-full bg-slate-900 rounded-t-[32px] p-6 border-t border-slate-700 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
-            style={{ maxHeight: '85vh' }}
           >
-            {/* Close button - top right */}
-            <button 
-              onClick={() => setSelectedEvent(null)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 active:bg-slate-600 transition-colors"
-              style={{ fontSize: '24px', lineHeight: '1' }}
-            >
-              ×
-            </button>
+            <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-8 opacity-50" />
 
-            {/* Header - Fixed */}
-            <div className="shrink-0 mb-4 pr-10">
-              <h2 className="text-xl font-bold text-white mb-2">{selectedEvent.title}</h2>
-              <div className="flex gap-2 flex-wrap">
-                <span className="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">
-                  {selectedEvent.date}
-                </span>
-                <TypeBadge type={selectedEvent.type} />
-                <MarketBadge market={selectedEvent.market} />
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">{selectedEvent.title}</h2>
+                <div className="flex gap-2">
+                  <span className="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">
+                    {selectedEvent.date}
+                  </span>
+                  <TypeBadge type={selectedEvent.type} />
+                </div>
               </div>
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="p-2 bg-slate-800 rounded-full text-slate-400 hover:bg-slate-700"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto pr-2" style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              <div className="space-y-6">
+            <div className="space-y-6">
               <div className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/50">
                 <div className="flex items-center gap-2 mb-3 text-blue-400 font-bold text-sm uppercase tracking-wider">
                   <Info size={16} />
@@ -930,19 +917,18 @@ export default function StockCalAndroid() {
                 </p>
               </div>
 
-              {/* Gemini AI Section */}
               <div className="border-t border-slate-700/50 pt-6 mt-2">
                  <div className="flex items-center gap-2 mb-4 text-purple-400 font-bold text-sm uppercase tracking-wider">
                     <Sparkles size={16} />
                     Gemini AI 深度戰略
                  </div>
-                 
+
                  {aiAnalysis ? (
                    <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 p-5 rounded-2xl border border-purple-500/30 animate-in fade-in duration-500">
                       <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed whitespace-pre-line">
                          {aiAnalysis}
                       </div>
-                      <button 
+                      <button
                         onClick={() => fetchStrategy(selectedEvent)}
                         className="mt-4 text-xs text-purple-400 flex items-center gap-1 hover:text-purple-300"
                       >
@@ -960,7 +946,7 @@ export default function StockCalAndroid() {
                            <span className="font-bold text-sm">AI 分析師思考中...</span>
                         </div>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => fetchStrategy(selectedEvent)}
                           className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-900/30 flex items-center gap-2 transition-all active:scale-95"
                         >
@@ -975,8 +961,7 @@ export default function StockCalAndroid() {
                    </div>
                  )}
               </div>
-              <div className="h-4" /> 
-              </div>
+              <div className="h-6" />
             </div>
           </div>
         </div>
@@ -984,3 +969,4 @@ export default function StockCalAndroid() {
     </div>
   );
 }
+```
