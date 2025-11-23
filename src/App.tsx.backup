@@ -1,0 +1,519 @@
+import { useState, useEffect } from 'react';
+import { 
+  Calendar, 
+  Flame, 
+  Target, 
+  Settings, 
+  Search, 
+  Bell, 
+  ChevronLeft, 
+  ChevronRight,
+  Info,
+  Zap,
+  Share2,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Globe
+} from 'lucide-react';
+
+// --- 1. 資料定義 (與 6.1 版相同) ---
+
+type EventType = 'critical' | 'hot' | 'corporate' | 'macro' | 'holiday';
+type Market = 'US' | 'TW' | 'Global';
+type Trend = 'bull' | 'bear' | 'neutral' | 'volatile';
+
+interface StockEvent {
+  id: string;
+  date: string;
+  title: string;
+  market: Market;
+  type: EventType;
+  trend: Trend;
+  relatedStocks?: string[];
+  description: string;
+  strategy: string;
+}
+
+const stockEvents: StockEvent[] = [
+  // --- 11月 ---
+  {
+    id: '11-24-bbu',
+    date: '2025-11-24',
+    title: 'BBU 資金狂熱',
+    market: 'TW',
+    type: 'hot',
+    trend: 'bull',
+    relatedStocks: ['AES-KY (6781)', '順達 (3211)', '新盛力 (4931)'],
+    description: '輝達 GB200 傳出全面採用 BBU (電池備援電力模組),資金正瘋狂湧入該族群,成交量爆增。',
+    strategy: '目前處於主升段,沿 5 日線操作。若爆量長黑破線則立即停利。',
+  },
+  {
+    id: '11-25-dell',
+    date: '2025-11-25',
+    title: 'Dell 財報公布',
+    market: 'US',
+    type: 'corporate',
+    trend: 'bull',
+    relatedStocks: ['緯創 (3231)', '廣達 (2382)', '仁寶 (2324)'],
+    description: 'Dell 為 AI 伺服器指標。重點觀察 AI Server 訂單積壓狀況與 PC 換機潮指引。',
+    strategy: '若 Dell 盤後大漲,隔日開盤直接關注廣達、緯創,追價意願可提高。',
+  },
+  {
+    id: '11-26-pce',
+    date: '2025-11-26',
+    title: 'PCE 物價指數',
+    market: 'US',
+    type: 'macro',
+    trend: 'neutral',
+    description: 'Fed 最重視的通膨指標。若核心 PCE 月增率 <= 0.2%,將確立 12 月降息預期。',
+    strategy: '數據公布前降低槓桿。若數據低於預期,科技股評價回升,可佈局權值股。',
+  },
+  {
+    id: '11-27-thanksgiving',
+    date: '2025-11-27',
+    title: '感恩節休市',
+    market: 'US',
+    type: 'holiday',
+    trend: 'neutral',
+    description: '美股全日休市。外資放假,台股成交量預期萎縮。',
+    strategy: '內資主導盤勢,大型股休息,留意中小型題材股或生技股表現。',
+  },
+  {
+    id: '11-28-etf',
+    date: '2025-11-28',
+    title: 'ETF 換股 & 作帳',
+    market: 'TW',
+    type: 'hot',
+    trend: 'bull',
+    relatedStocks: ['威盛 (2388)', '華新 (1605)', '00878成分股'],
+    description: '00878/00940 成分股調整生效,尾盤將爆大量。同時為集團作帳慣性發動日。',
+    strategy: '留意尾盤爆量下殺的績優股(投信被動賣超),隔日易有反彈行情。',
+  },
+
+  // --- 12月 ---
+  {
+    id: '12-04-avgo',
+    date: '2025-12-04',
+    title: 'Broadcom (博通) 財報',
+    market: 'US',
+    type: 'corporate',
+    trend: 'bull',
+    relatedStocks: ['上詮 (3363)', '波若威 (3163)', '台積電 (2330)'],
+    description: 'CPO (矽光子) 領頭羊。財報若大談光通訊與 ASIC 進度,將激勵相關供應鏈。',
+    strategy: '若提及 CPO 出貨超前,矽光子族群將重啟漲勢,適合低接。',
+  },
+  {
+    id: '12-05-equip',
+    date: '2025-12-05',
+    title: '設備股押寶買盤',
+    market: 'TW',
+    type: 'hot',
+    trend: 'bull',
+    relatedStocks: ['弘塑 (3131)', '萬潤 (6187)', '辛耘 (3583)'],
+    description: '市場預期台積電 1 月法說將上修資本支出,聰明錢開始提前卡位 CoWoS 設備。',
+    strategy: '趁大盤量縮整理時,分批佈局設備股,等待 1 月抬轎行情。',
+  },
+  {
+    id: '12-10-revenue',
+    date: '2025-12-10',
+    title: '11月營收公告截止',
+    market: 'TW',
+    type: 'corporate',
+    trend: 'bull',
+    relatedStocks: ['台積電 (2330)', '鴻海 (2317)', '廣達 (2382)'],
+    description: '驗證 AI 伺服器旺季。權值股營收創高是常態,不跌就是利多。',
+    strategy: '檢視營收月增率強勁之個股,若股價尚未反應可介入。',
+  },
+  {
+    id: '12-10-fomc',
+    date: '2025-12-10',
+    title: 'CPI 公布 & FOMC',
+    market: 'US',
+    type: 'critical',
+    trend: 'bear',
+    description: '年度超級轉折日！通膨數據與 2026 點陣圖將決定美股是否修正。',
+    strategy: '極高風險日！避免在此日前後追高熱門股,保留現金等待大盤方向。',
+  },
+  {
+    id: '12-15-group',
+    date: '2025-12-15',
+    title: '集團/投信作帳衝刺',
+    market: 'TW',
+    type: 'hot',
+    trend: 'volatile',
+    relatedStocks: ['神達 (3706)', '鴻準 (2354)', '奇鋐 (3017)'],
+    description: '年底內資作帳最高峰,投信高持股之中型股波動加劇。',
+    strategy: '跟隨投信買超連續性,慎防結帳賣壓,適合短進短出。',
+  },
+  {
+    id: '12-18-micron',
+    date: '2025-12-18',
+    title: 'Micron (美光) 財報',
+    market: 'US',
+    type: 'corporate',
+    trend: 'bull',
+    relatedStocks: ['群聯 (8299)', '威剛 (3260)', '南亞科 (2408)'],
+    description: 'HBM 排擠效應導致傳統 DRAM 供給吃緊,報價看漲。',
+    strategy: '若美光財報指引佳,隔日開盤直接搶進記憶體族群。',
+  },
+  {
+    id: '12-25-xmas',
+    date: '2025-12-25',
+    title: '聖誕節休市 & 生技',
+    market: 'Global',
+    type: 'holiday',
+    trend: 'neutral',
+    relatedStocks: ['保瑞 (6472)', '藥華藥 (6446)'],
+    description: '美股休市。外資放長假,內資常點火生技股避險或炒作展覽題材。',
+    strategy: '資金轉進防禦型或生技族群,等待元旦行情。',
+  },
+
+  // --- 1月 ---
+  {
+    id: '01-06-ces',
+    date: '2026-01-06',
+    title: 'CES 2026 消費電子展',
+    market: 'Global',
+    type: 'corporate',
+    trend: 'bull',
+    relatedStocks: ['華碩 (2357)', '微星 (2377)', '所羅門 (2359)'],
+    description: '聚焦 AI PC、機器人與 RTX 50 顯卡發表。',
+    strategy: '關注板卡廠與機器人概念股,通常展覽期間有題材行情。',
+  },
+  {
+    id: '01-15-tsmc',
+    date: '2026-01-15',
+    title: '台積電 Q4 法說會',
+    market: 'TW',
+    type: 'critical',
+    trend: 'bull',
+    relatedStocks: ['弘塑', '家登', '辛耘', '萬潤'],
+    description: '全球半導體風向球。聚焦 2026 資本支出、2nm 進度與毛利率。',
+    strategy: '若資本支出 > 380億美元,設備股將噴出。法說前押寶,法說當日視指引操作。',
+  },
+  {
+    id: '01-22-tesla',
+    date: '2026-01-22',
+    title: 'Tesla 財報',
+    market: 'US',
+    type: 'corporate',
+    trend: 'volatile',
+    relatedStocks: ['亞光 (3019)', '和大 (1536)'],
+    description: '關注 Robotaxi 進展與毛利率回升狀況。',
+    strategy: '若指引佳,資金將回流基期極低的車用電子族群。',
+  },
+  {
+    id: '01-27-mediatek',
+    date: '2026-01-27',
+    title: '聯發科法說 & IP股',
+    market: 'TW',
+    type: 'hot',
+    trend: 'bull',
+    relatedStocks: ['世芯-KY (3661)', '創意 (3443)'],
+    description: '聚焦 ASIC 業務與天璣 9400 銷售。',
+    strategy: '高價 IP 股通常在法說季前後會有法人回補動作。',
+  }
+];
+
+// --- 2. UI 元件 (模擬 Ionic 風格) ---
+
+const TypeBadge = ({ type }: { type: EventType }) => {
+  const styles = {
+    critical: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+    hot: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    corporate: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    macro: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    holiday: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  };
+  const labels = {
+    critical: '核彈級',
+    hot: '資金熱點',
+    corporate: '公司大事',
+    macro: '經濟數據',
+    holiday: '休市',
+  };
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${styles[type]}`}>
+      {labels[type]}
+    </span>
+  );
+};
+
+const MarketBadge = ({ market }: { market: Market }) => (
+  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-medium mr-2">
+    {market === 'US' ? '🇺🇸 美股' : market === 'TW' ? '🇹🇼 台股' : '🌐 全球'}
+  </span>
+);
+
+// --- 3. 主應用程式 ---
+
+export default function StockCalIonic() {
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 20));
+  const [selectedDate, setSelectedDate] = useState<string>('2025-11-24');
+  const [selectedEvent, setSelectedEvent] = useState<StockEvent | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setIsLoaded(true), 600);
+  }, []);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+
+  const prevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+    setSelectedDate('');
+  };
+  const nextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+    setSelectedDate('');
+  };
+
+  const days = [];
+  for (let i = 0; i < firstDayOfMonth; i++) days.push(<div key={`empty-${i}`} />);
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dayEvents = stockEvents.filter(e => e.date === dateStr);
+    const isSelected = selectedDate === dateStr;
+    
+    let dotStyle: React.CSSProperties | undefined;
+    if (dayEvents.some(e => e.type === 'critical')) {
+      dotStyle = { backgroundColor: '#f43f5e', boxShadow: '0 0 6px rgba(244,63,94,0.8)' };
+    } else if (dayEvents.some(e => e.type === 'hot')) {
+      dotStyle = { backgroundColor: '#f59e0b' };
+    } else if (dayEvents.length > 0) {
+      dotStyle = { backgroundColor: '#3b82f6' };
+    }
+
+    days.push(
+      <div 
+        key={d} 
+        onClick={() => setSelectedDate(dateStr)}
+        className={`
+          h-12 flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all
+          ${isSelected ? 'bg-blue-600 text-white scale-105 shadow-lg z-10' : 'text-slate-400 active:bg-slate-800'}
+        `}
+      >
+        <span className={`text-sm ${isSelected ? 'font-bold' : 'font-medium'}`}>{d}</span>
+        {dotStyle && <div style={{ width: '6px', height: '6px', borderRadius: '50%', marginTop: '2px', ...dotStyle }} />}
+      </div>
+    );
+  }
+
+  const selectedDayEvents = selectedDate 
+    ? stockEvents.filter(e => e.date === selectedDate)
+    : [];
+
+  if (!isLoaded) {
+    return (
+      <div className="h-screen w-full bg-slate-950 flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+          <span className="text-blue-500 font-mono text-xs">LOADING...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-screen w-screen bg-slate-950 font-sans text-slate-200 overflow-hidden" style={{ minHeight: '100dvh' }}>
+      
+      {/* --- IonHeader Simulation --- */}
+      <div className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shadow-sm z-20 shrink-0">
+        <div className="font-bold text-lg text-white tracking-tight">StockCal</div>
+        <div className="flex gap-1">
+          <button className="p-2 rounded-full text-slate-400 active:bg-slate-800 transition-colors">
+            <Search size={20} />
+          </button>
+          <button className="p-2 rounded-full text-slate-400 active:bg-slate-800 transition-colors relative">
+            <Bell size={20} />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full" />
+          </button>
+        </div>
+      </div>
+
+      {/* --- IonContent Simulation --- */}
+      <div className="flex-1 overflow-y-auto pb-24 overscroll-y-contain">
+        
+        {/* Month Selector */}
+        <div className="flex items-center justify-between px-4 py-4 sticky top-0 bg-slate-950/95 backdrop-blur-sm z-10">
+          <button onClick={prevMonth} className="p-1 text-slate-400 active:text-white active:bg-slate-800 rounded-full">
+            <ChevronLeft size={24} />
+          </button>
+          <h2 className="text-lg font-bold text-white">
+            {year} <span className="text-slate-600 mx-1">/</span> {String(month + 1).padStart(2, '0')}
+          </h2>
+          <button onClick={nextMonth} className="p-1 text-slate-400 active:text-white active:bg-slate-800 rounded-full">
+            <ChevronRight size={24} />
+          </button>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="px-2">
+          <div className="grid grid-cols-7 text-center mb-2">
+            {['日','一','二','三','四','五','六'].map(d => (
+              <span key={d} className="text-[11px] text-slate-500 font-bold">{d}</span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-y-1 gap-x-1 mb-6">
+            {days}
+          </div>
+        </div>
+
+        {/* Event List */}
+        <div className="px-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-slate-300">
+              {selectedDate ? `${selectedDate.split('-')[1]}/${selectedDate.split('-')[2]} 重點事件` : '本日無事'}
+            </h3>
+            {selectedDayEvents.length > 0 && (
+               <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                 {selectedDayEvents.length} 筆資料
+               </span>
+            )}
+          </div>
+
+          <div className="space-y-3">
+             {selectedDayEvents.length === 0 ? (
+               <div className="py-8 text-center text-slate-600 text-sm flex flex-col items-center gap-2">
+                 <Globe size={32} className="opacity-20" />
+                 市場平靜,建議休息觀望
+               </div>
+             ) : (
+               selectedDayEvents.map(event => (
+                 <div 
+                   key={event.id}
+                   onClick={() => setSelectedEvent(event)}
+                   className="bg-slate-800/80 p-4 rounded-xl border-2 border-slate-700 active:bg-slate-700 transition-all cursor-pointer group shadow-lg"
+                 >
+                   <div className="flex justify-between items-start mb-2">
+                     <h4 className="text-base font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
+                       {event.title}
+                     </h4>
+                     <TypeBadge type={event.type} />
+                   </div>
+                   <div className="flex items-center gap-2 text-xs">
+                      <MarketBadge market={event.market} />
+                      <span className={`flex items-center gap-1 font-bold ${
+                        event.trend === 'bull' ? 'text-rose-400' : 
+                        event.trend === 'bear' ? 'text-emerald-400' : 'text-slate-400'
+                      }`}>
+                        {event.trend === 'bull' ? <TrendingUp size={12}/> : 
+                         event.trend === 'bear' ? <TrendingDown size={12}/> : <Activity size={12}/>}
+                        {event.trend === 'bull' ? '偏多' : event.trend === 'bear' ? '偏空' : '震盪'}
+                      </span>
+                   </div>
+                 </div>
+               ))
+             )}
+          </div>
+        </div>
+      </div>
+
+      {/* --- IonTabBar Simulation --- */}
+      <div className="h-[56px] bg-slate-900 border-t border-slate-800 flex items-center justify-around shrink-0 pb-safe">
+        <button className="flex flex-col items-center justify-center w-full h-full text-blue-500">
+          <Calendar size={20} strokeWidth={2.5} />
+          <span className="text-[10px] font-medium mt-1">日曆</span>
+        </button>
+        <button className="flex flex-col items-center justify-center w-full h-full text-slate-500 active:text-slate-300">
+          <Flame size={20} />
+          <span className="text-[10px] font-medium mt-1">熱點</span>
+        </button>
+        <button className="flex flex-col items-center justify-center w-full h-full text-slate-500 active:text-slate-300">
+          <Target size={20} />
+          <span className="text-[10px] font-medium mt-1">策略</span>
+        </button>
+        <button className="flex flex-col items-center justify-center w-full h-full text-slate-500 active:text-slate-300">
+          <Settings size={20} />
+          <span className="text-[10px] font-medium mt-1">設定</span>
+        </button>
+      </div>
+
+      {/* --- Modal (Center) --- */}
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ pointerEvents: 'none' }}>
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/80"
+            style={{ pointerEvents: 'auto' }}
+            onClick={() => setSelectedEvent(null)}
+          />
+          
+          {/* Modal Content */}
+          <div 
+            className="bg-slate-900 w-full max-w-lg max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border-2 border-slate-700 relative"
+            style={{ pointerEvents: 'auto' }}
+          >
+            {/* Close Button - Top Right */}
+            <button 
+              onClick={() => setSelectedEvent(null)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 active:bg-slate-600 transition-colors"
+              style={{ fontSize: '20px', lineHeight: '1' }}
+            >
+              ×
+            </button>
+
+            {/* Modal Header */}
+            <div className="px-5 pt-5 pb-3 shrink-0 bg-slate-900">
+              <h3 className="font-bold text-xl text-white pr-10">{selectedEvent.title}</h3>
+              <div className="flex items-center gap-2 mt-2">
+                <TypeBadge type={selectedEvent.type} />
+                <MarketBadge market={selectedEvent.market} />
+              </div>
+            </div>
+
+            {/* Modal Body - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-5 pb-5" style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <div className="space-y-4 pt-2">
+              
+              {/* 資金情報 */}
+              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                <div className="flex items-center gap-2 mb-2 text-blue-400 font-bold text-sm">
+                  <Info size={16} /> 資金情報
+                </div>
+                <p className="text-slate-300 text-sm leading-6 text-justify">{selectedEvent.description}</p>
+              </div>
+
+              {/* 連動個股 */}
+              {selectedEvent.relatedStocks && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-amber-400 font-bold text-sm">
+                    <Zap size={16} /> 連動關注
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEvent.relatedStocks.map((stock, i) => (
+                      <span key={i} className="px-3 py-1.5 bg-slate-800 text-slate-200 rounded-lg text-xs font-medium border border-slate-700">
+                        {stock}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 操作策略 */}
+              <div className="bg-slate-800/50 p-4 rounded-xl border-l-4 border-emerald-500">
+                <div className="flex items-center gap-2 mb-2 text-emerald-400 font-bold text-sm">
+                  <Target size={16} /> 操作策略
+                </div>
+                <p className="text-slate-200 text-sm font-medium leading-6">{selectedEvent.strategy}</p>
+              </div>
+
+              <button className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-all text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
+                 <Share2 size={18} /> 
+                 加入觀察清單
+              </button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
