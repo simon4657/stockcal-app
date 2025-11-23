@@ -340,7 +340,13 @@ const useGeminiStrategy = () => {
     setError(null);
     setAnalysis(null);
 
-    const apiKey = ""; // 請在此填入您的 Gemini API Key
+    const apiKey = localStorage.getItem('gemini_api_key') || '';
+    
+    if (!apiKey) {
+      setError('請先在設定頁面中輸入 Gemini API Key');
+      setLoading(false);
+      return;
+    }
     const prompt = `
       分析股市事件：${event.title}
       市場：${event.market}
@@ -573,6 +579,7 @@ const SettingsView = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(true);
   const [showModal, setShowModal] = useState<{title: string, content: string} | null>(null);
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
 
   const handleToggle = (setting: string) => {
     if (setting === 'notifications') {
@@ -584,6 +591,15 @@ const SettingsView = () => {
 
   const openModal = (title: string, content: string) => {
     setShowModal({ title, content });
+  };
+
+  const saveApiKey = () => {
+    if (geminiApiKey.trim()) {
+      localStorage.setItem('gemini_api_key', geminiApiKey.trim());
+      alert('✅ API Key 已儲存！現在可以使用 AI 分析功能了。');
+    } else {
+      alert('⚠️ 請輸入有效的 API Key');
+    }
   };
 
   const handleLogout = () => {
@@ -606,6 +622,31 @@ const SettingsView = () => {
           <h3 className="text-white font-bold">User 001</h3>
           <p className="text-xs text-slate-500">Pro 會員 (到期日: 2026/12/31)</p>
         </div>
+      </div>
+
+      {/* Gemini API Key Setting */}
+      <div className="bg-slate-900 rounded-2xl p-4 mb-6 border border-slate-800">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={18} className="text-purple-400" />
+          <h3 className="text-white font-bold text-sm">Gemini AI 設定</h3>
+        </div>
+        <p className="text-xs text-slate-400 mb-3">輸入您的 Gemini API Key 以啟用 AI 深度分析功能</p>
+        <input
+          type="password"
+          placeholder="請輸入 Gemini API Key"
+          value={geminiApiKey}
+          onChange={(e) => setGeminiApiKey(e.target.value)}
+          className="w-full bg-slate-800 text-white px-3 py-2 rounded-lg text-sm border border-slate-700 focus:border-purple-500 focus:outline-none mb-2"
+        />
+        <button
+          onClick={saveApiKey}
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          儲存 API Key
+        </button>
+        <p className="text-[10px] text-slate-500 mt-2">
+          💡 如何取得 API Key: 前往 <a href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" className="text-purple-400 underline">ai.google.dev</a> 申請
+        </p>
       </div>
 
       <div className="space-y-2">
