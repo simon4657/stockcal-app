@@ -30,7 +30,10 @@ import {
   Clock
 } from 'lucide-react';
 
-// --- 1. 資料定義 ---
+// --- 1. API 配置 ---
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// --- 2. 資料定義 ---
 
 type EventType = 'critical' | 'hot' | 'corporate' | 'macro' | 'holiday';
 type Market = 'US' | 'TW' | 'Global';
@@ -486,7 +489,7 @@ const CalendarView = ({
   </div>
 );
 
-const HotView = () => {
+const HotView = ({ hotTrends }: { hotTrends: any[] }) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -499,7 +502,7 @@ const HotView = () => {
       </div>
 
       <div className="space-y-4">
-        {dailyHotTrends.map((sector, idx) => (
+        {hotTrends.map((sector, idx) => (
           <div key={sector.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden hover:border-orange-500/30 transition-colors cursor-pointer group">
             <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl font-black text-slate-500 group-hover:text-orange-500 transition-colors">
               {idx + 1}
@@ -535,7 +538,7 @@ const HotView = () => {
   );
 };
 
-const StrategyView = () => {
+const StrategyView = ({ strategies }: { strategies: any[] }) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -548,7 +551,7 @@ const StrategyView = () => {
       </div>
 
       <div className="grid gap-4">
-        {dailyStrategies.map((s) => (
+        {strategies.map((s) => (
           <div key={s.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-600 transition-colors relative overflow-hidden group">
             <div className="flex justify-between mb-3 relative z-10">
               <span className={`text-xs font-bold px-2 py-1 rounded ${s.type === 'bull' ? 'bg-rose-900/30 text-rose-400' : s.type === 'bear' ? 'bg-emerald-900/30 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
@@ -756,12 +759,58 @@ export default function StockCalAndroid() {
   const [selectedEvent, setSelectedEvent] = useState<StockEvent | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // API 資料 state
+  const [apiEvents, setApiEvents] = useState<StockEvent[]>([]);
+  const [apiHotTrends, setApiHotTrends] = useState<any[]>([]);
+  const [apiStrategies, setApiStrategies] = useState<any[]>([]);
+  const [apiLoading, setApiLoading] = useState(true);
+  
+  // 從 API 獲取資料
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [eventsRes, trendsRes, strategiesRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/events`),
+          fetch(`${API_BASE_URL}/api/hot-trends`),
+          fetch(`${API_BASE_URL}/api/strategies`)
+        ]);
+        
+        if (eventsRes.ok) {
+          const events = await eventsRes.json();
+          setApiEvents(events);
+        }
+        
+        if (trendsRes.ok) {
+          const trends = await trendsRes.json();
+          setApiHotTrends(trends);
+        }
+        
+        if (strategiesRes.ok) {
+          const strategies = await strategiesRes.json();
+          setApiStrategies(strategies);
+        }
+      } catch (error) {
+        console.error('Failed to fetch API data:', error);
+        // 如果 API 失敗，使用預設資料
+      } finally {
+        setApiLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   const { fetchStrategy, loading: aiLoading, error: aiError, analysis: aiAnalysis, setAnalysis: setAiAnalysis } = useGeminiStrategy();
 
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 800);
   }, []);
+  
+  // 使用 API 資料或預設資料
+  const events = apiEvents.length > 0 ? apiEvents : monthlyEvents;
+  const hotTrends = apiHotTrends.length > 0 ? apiHotTrends : dailyHotTrends;
+  const strategies = apiStrategies.length > 0 ? apiStrategies : dailyStrategies;
 
   useEffect(() => {
     if (selectedEvent) {
@@ -807,7 +856,7 @@ export default function StockCalAndroid() {
     );
   }
 
-  const selectedDayEvents = selectedDate ? monthlyEvents.filter(e => e.date === selectedDate) : [];
+  const selectedDayEvents = selectedDate ? events.filter(e => e.date === selectedDate) : [];
 
   if (!isLoaded) {
     return (
@@ -859,8 +908,8 @@ export default function StockCalAndroid() {
             setSelectedEvent={setSelectedEvent}
           />
         )}
-        {activeTab === 'hot' && <HotView />}
-        {activeTab === 'strategy' && <StrategyView />}
+        {activeTab === 'hot' && <HotView hotTrends={hotTrends} />}
+        {activeTab === 'strategy' && <StrategyView strategies={strategies} />}
         {activeTab === 'settings' && <SettingsView />}
       </div>
 
