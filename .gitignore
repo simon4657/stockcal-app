@@ -30,3 +30,7 @@ ios/
 # Capacitor
 .capacitor/
 capacitor.config.json
+
+# Environment variables
+.env
+.env.local
