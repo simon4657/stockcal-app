@@ -831,7 +831,7 @@ export default function StockCalAndroid() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const dayEvents = monthlyEvents.filter(e => e.date === dateStr);
+    const dayEvents = events.filter(e => e.date === dateStr);
     const isSelected = selectedDate === dateStr;
 
     let dotColor = '';
