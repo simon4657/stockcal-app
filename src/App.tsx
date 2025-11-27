@@ -712,7 +712,7 @@ const SettingsView = () => {
         </button>
 
         <button
-          onClick={() => openModal('關於 StockCal', '版本: v6.2.0\\n開發團隊: StockCal Team\\n聯絡我們: support@stockcal.app')}
+          onClick={() => openModal('關於 StockCal', '版本: v6.3.0 (修復 API 資料加載)\\n開發團隊: StockCal Team\\n聯絡我們: support@stockcal.app')}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
           <div className="flex items-center gap-3 text-slate-300">
@@ -900,7 +900,7 @@ export default function StockCalAndroid() {
             <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
               StockCal <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1"><Sparkles size={8} /> AI</span>
             </h1>
-            <p className="text-[10px] text-blue-400 font-medium">股市戰情室 V6.2</p>
+            <p className="text-[10px] text-blue-400 font-medium">股市戰情室 V6.3</p>
           </div>
         </div>
         <div className="flex gap-2">
