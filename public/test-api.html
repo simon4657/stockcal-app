@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockCal API 測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            color: #4a9eff;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 8px;
+        }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        pre {
+            background: #0f1419;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>StockCal API 連接測試</h1>
+    
+    <div class="section">
+        <h2>API 端點</h2>
+        <p id="api-url">https://stockcal-api.onrender.com</p>
+    </div>
+    
+    <div class="section">
+        <h2>測試結果</h2>
+        <button onclick="testEvents()">測試事件 API</button>
+        <button onclick="testHotTrends()">測試熱點 API</button>
+        <button onclick="testStrategies()">測試策略 API</button>
+        <button onclick="testAll()">測試全部</button>
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        const API_BASE = 'https://stockcal-api.onrender.com';
+        const resultsDiv = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const p = document.createElement('pre');
+            p.className = type;
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.appendChild(p);
+        }
+        
+        async function testEvents() {
+            resultsDiv.innerHTML = '';
+            log('開始測試事件 API...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/events`);
+                log(`狀態碼: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ 成功獲取 ${data.length} 個事件`, 'success');
+                    log(`第一個事件: ${data[0].date} - ${data[0].title}`, 'success');
+                    log(JSON.stringify(data[0], null, 2));
+                } else {
+                    log(`✗ 請求失敗: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ 錯誤: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testHotTrends() {
+            resultsDiv.innerHTML = '';
+            log('開始測試熱點 API...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/hot-trends`);
+                log(`狀態碼: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ 成功獲取 ${data.length} 個熱點`, 'success');
+                    data.forEach((item, i) => {
+                        log(`${i+1}. ${item.name} (強度: ${item.strength}, 更新: ${item.updatedAt})`, 'success');
+                    });
+                } else {
+                    log(`✗ 請求失敗: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ 錯誤: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testStrategies() {
+            resultsDiv.innerHTML = '';
+            log('開始測試策略 API...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/strategies`);
+                log(`狀態碼: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ 成功獲取 ${data.length} 個策略`, 'success');
+                    data.forEach((item, i) => {
+                        log(`${i+1}. ${item.title} (風險: ${item.risk}, 更新: ${item.updatedAt})`, 'success');
+                    });
+                } else {
+                    log(`✗ 請求失敗: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ 錯誤: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAll() {
+            await testEvents();
+            await new Promise(r => setTimeout(r, 1000));
+            await testHotTrends();
+            await new Promise(r => setTimeout(r, 1000));
+            await testStrategies();
+        }
+        
+        // 頁面載入時自動測試
+        window.onload = () => {
+            log('頁面載入完成，開始自動測試...');
+            setTimeout(testAll, 500);
+        };
+    </script>
+</body>
+</html>
