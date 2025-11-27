@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 // --- 1. API 配置 ---
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://stockcal-api.onrender.com';
 
 // --- 2. 資料定義 ---
 
@@ -769,6 +769,9 @@ export default function StockCalAndroid() {
   // 從 API 獲取資料
   useEffect(() => {
     const fetchData = async () => {
+      console.log('[StockCal] 開始加載 API 資料...');
+      console.log('[StockCal] API URL:', API_BASE_URL);
+      
       try {
         const [eventsRes, trendsRes, strategiesRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/events`),
@@ -776,25 +779,40 @@ export default function StockCalAndroid() {
           fetch(`${API_BASE_URL}/api/strategies`)
         ]);
         
+        console.log('[StockCal] API 回應狀態:', {
+          events: eventsRes.status,
+          trends: trendsRes.status,
+          strategies: strategiesRes.status
+        });
+        
         if (eventsRes.ok) {
           const events = await eventsRes.json();
+          console.log('[StockCal] 事件資料加載成功:', events.length, '個事件');
           setApiEvents(events);
+        } else {
+          console.error('[StockCal] 事件資料加載失敗:', eventsRes.status);
         }
         
         if (trendsRes.ok) {
           const trends = await trendsRes.json();
+          console.log('[StockCal] 熱點資料加載成功:', trends.length, '個熱點');
           setApiHotTrends(trends);
+        } else {
+          console.error('[StockCal] 熱點資料加載失敗:', trendsRes.status);
         }
         
         if (strategiesRes.ok) {
           const strategies = await strategiesRes.json();
+          console.log('[StockCal] 策略資料加載成功:', strategies.length, '個策略');
           setApiStrategies(strategies);
+        } else {
+          console.error('[StockCal] 策略資料加載失敗:', strategiesRes.status);
         }
       } catch (error) {
-        console.error('Failed to fetch API data:', error);
-        // 如果 API 失敗，使用預設資料
+        console.error('[StockCal] API 請求失敗:', error);
       } finally {
         setApiLoading(false);
+        console.log('[StockCal] API 資料加載完成');
       }
     };
     
@@ -807,10 +825,10 @@ export default function StockCalAndroid() {
     setTimeout(() => setIsLoaded(true), 800);
   }, []);
   
-  // 使用 API 資料或預設資料
-  const events = apiEvents.length > 0 ? apiEvents : monthlyEvents;
-  const hotTrends = apiHotTrends.length > 0 ? apiHotTrends : dailyHotTrends;
-  const strategies = apiStrategies.length > 0 ? apiStrategies : dailyStrategies;
+  // 強制使用 API 資料，只有在加載中時才使用預設資料
+  const events = apiLoading ? monthlyEvents : (apiEvents.length > 0 ? apiEvents : monthlyEvents);
+  const hotTrends = apiLoading ? dailyHotTrends : (apiHotTrends.length > 0 ? apiHotTrends : dailyHotTrends);
+  const strategies = apiLoading ? dailyStrategies : (apiStrategies.length > 0 ? apiStrategies : dailyStrategies);
 
   useEffect(() => {
     if (selectedEvent) {
