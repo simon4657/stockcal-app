@@ -366,7 +366,7 @@ const useGeminiStrategy = () => {
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-1219:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -712,14 +712,14 @@ const SettingsView = () => {
         </button>
 
         <button
-          onClick={() => openModal('關於 StockCal', '版本: v6.3.0 (修復 API 資料加載)\\n開發團隊: StockCal Team\\n聯絡我們: support@stockcal.app')}
+          onClick={() => openModal("關於 StockCal", "版本: v6.4.0 (升級 Gemini 3 Pro)\n開發團隊: StockCal Team\n聯絡我們: support@stockcal.app")}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
           <div className="flex items-center gap-3 text-slate-300">
             <Info size={18} />
             <div className="text-left">
               <div className="text-sm font-medium">關於 StockCal</div>
-              <div className="text-[10px] text-slate-500">v6.2.0</div>
+              <div className="text-[10px] text-slate-500">v6.4.0</div>
             </div>
           </div>
           <ChevronRight size={16} className="text-slate-600" />
@@ -1046,7 +1046,7 @@ export default function StockCalAndroid() {
                  ) : (
                    <div className="bg-slate-800/30 p-6 rounded-2xl border border-dashed border-slate-700 flex flex-col items-center justify-center text-center">
                        <p className="text-slate-400 text-sm mb-4">
-                         想知道更詳細的歷史回測與進場點建議？<br/>讓 Gemini 2.0 Flash Thinking 為您進行深度分析。
+                         想知道更詳細的歷史回測與進場點建議？<br/>讓 Gemini 3 Pro 為您進行深度分析。
                        </p>
                       {aiLoading ? (
                         <div className="flex items-center gap-2 text-purple-400 bg-purple-500/10 px-6 py-3 rounded-xl">
