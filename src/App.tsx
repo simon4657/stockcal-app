@@ -366,7 +366,7 @@ const useGeminiStrategy = () => {
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-1219:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1045,9 +1045,9 @@ export default function StockCalAndroid() {
                    </div>
                  ) : (
                    <div className="bg-slate-800/30 p-6 rounded-2xl border border-dashed border-slate-700 flex flex-col items-center justify-center text-center">
-                      <p className="text-slate-400 text-sm mb-4">
-                        想知道更詳細的歷史回測與進場點建議？<br/>讓 Gemini 為您進行深度分析。
-                      </p>
+                       <p className="text-slate-400 text-sm mb-4">
+                         想知道更詳細的歷史回測與進場點建議？<br/>讓 Gemini 2.0 Flash Thinking 為您進行深度分析。
+                       </p>
                       {aiLoading ? (
                         <div className="flex items-center gap-2 text-purple-400 bg-purple-500/10 px-6 py-3 rounded-xl">
                            <Loader size={18} className="animate-spin" />
