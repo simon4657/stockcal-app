@@ -712,14 +712,14 @@ const SettingsView = () => {
         </button>
 
         <button
-          onClick={() => openModal("關於 StockCal", "版本: v6.4.0 (升級 Gemini 3 Pro)\n開發團隊: StockCal Team\n聯絡我們: support@stockcal.app")}
+          onClick={() => openModal("關於 StockCal", "版本: v6.5.0 (預設顯示當前月份)\n開發團隊: StockCal Team\n聯絡我們: support@stockcal.app")}
           className="w-full bg-slate-900 p-4 rounded-xl flex items-center justify-between active:bg-slate-800 border border-slate-800/50 transition-colors"
         >
           <div className="flex items-center gap-3 text-slate-300">
             <Info size={18} />
             <div className="text-left">
               <div className="text-sm font-medium">關於 StockCal</div>
-              <div className="text-[10px] text-slate-500">v6.4.0</div>
+              <div className="text-[10px] text-slate-500">v6.5.0</div>
             </div>
           </div>
           <ChevronRight size={16} className="text-slate-600" />
@@ -754,8 +754,10 @@ const SettingsView = () => {
 };
 
 export default function StockCalAndroid() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 20));
-  const [selectedDate, setSelectedDate] = useState<string>('2025-11-24');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0].replace(/-/g, '-')
+  );
   const [selectedEvent, setSelectedEvent] = useState<StockEvent | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [isLoaded, setIsLoaded] = useState(false);
