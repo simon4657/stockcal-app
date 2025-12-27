@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { AIAnalysisModal } from './components/AIAnalysis';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -490,7 +489,7 @@ const CalendarView = ({
   </div>
 );
 
-const HotView = ({ hotTrends, onAnalyze }: { hotTrends: any[]; onAnalyze: (trend: any) => void }) => {
+const HotView = ({ hotTrends }: { hotTrends: any[] }) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -504,7 +503,7 @@ const HotView = ({ hotTrends, onAnalyze }: { hotTrends: any[]; onAnalyze: (trend
 
       <div className="space-y-4">
         {hotTrends.map((sector, idx) => (
-          <div key={sector.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden hover:border-orange-500/30 transition-colors group">
+          <div key={sector.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden hover:border-orange-500/30 transition-colors cursor-pointer group">
             <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl font-black text-slate-500 group-hover:text-orange-500 transition-colors">
               {idx + 1}
             </div>
@@ -532,13 +531,6 @@ const HotView = ({ hotTrends, onAnalyze }: { hotTrends: any[]; onAnalyze: (trend
                 </span>
               ))}
             </div>
-            
-            <button
-              onClick={() => onAnalyze(sector)}
-              className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
-            >
-              <Sparkles size={16} /> AI 深度分析
-            </button>
           </div>
         ))}
       </div>
@@ -546,7 +538,7 @@ const HotView = ({ hotTrends, onAnalyze }: { hotTrends: any[]; onAnalyze: (trend
   );
 };
 
-const StrategyView = ({ strategies, onAnalyze }: { strategies: any[]; onAnalyze: (strategy: any) => void }) => {
+const StrategyView = ({ strategies }: { strategies: any[] }) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -573,14 +565,8 @@ const StrategyView = ({ strategies, onAnalyze }: { strategies: any[]; onAnalyze:
             <p className="text-sm text-slate-400 leading-6 relative z-10">{s.desc}</p>
             <div className="mt-3 pt-3 border-t border-slate-800 flex justify-between items-center relative z-10">
                <span className="text-[10px] text-slate-500">關注: {s.target}</span>
+               <ChevronRight size={14} className="text-slate-600 group-hover:text-blue-400" />
             </div>
-            
-            <button
-              onClick={() => onAnalyze(s)}
-              className="w-full mt-3 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm relative z-10"
-            >
-              <Sparkles size={16} /> AI 深度分析
-            </button>
 
             <div className="absolute -bottom-4 -right-4 text-slate-800/30 transform rotate-12 group-hover:scale-110 transition-transform">
                <Target size={80} />
@@ -776,13 +762,6 @@ export default function StockCalAndroid() {
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // AI 分析 modal state
-  const [aiAnalysisModal, setAiAnalysisModal] = useState<{
-    type: 'event' | 'hot-trend' | 'strategy';
-    itemId: string;
-    itemData: any;
-  } | null>(null);
-  
   // API 資料 state
   const [apiEvents, setApiEvents] = useState<StockEvent[]>([]);
   const [apiHotTrends, setApiHotTrends] = useState<any[]>([]);
@@ -949,18 +928,8 @@ export default function StockCalAndroid() {
             setSelectedEvent={setSelectedEvent}
           />
         )}
-        {activeTab === 'hot' && (
-          <HotView
-            hotTrends={hotTrends}
-            onAnalyze={(trend) => setAiAnalysisModal({ type: 'hot-trend', itemId: trend.id, itemData: trend })}
-          />
-        )}
-        {activeTab === 'strategy' && (
-          <StrategyView
-            strategies={strategies}
-            onAnalyze={(strategy) => setAiAnalysisModal({ type: 'strategy', itemId: strategy.id, itemData: strategy })}
-          />
-        )}
+        {activeTab === 'hot' && <HotView hotTrends={hotTrends} />}
+        {activeTab === 'strategy' && <StrategyView strategies={strategies} />}
         {activeTab === 'settings' && <SettingsView />}
       </div>
 
@@ -1058,34 +1027,54 @@ export default function StockCalAndroid() {
                 </p>
               </div>
 
-              <button
-                onClick={() => {
-                  setAiAnalysisModal({
-                    type: 'event',
-                    itemId: selectedEvent.id,
-                    itemData: selectedEvent
-                  });
-                  setSelectedEvent(null);
-                }}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2 transition-all active:scale-95"
-              >
-                <Sparkles size={20} /> 開啟 AI 深度分析
-              </button>
-              
+              <div className="border-t border-slate-700/50 pt-6 mt-2">
+                 <div className="flex items-center gap-2 mb-4 text-purple-400 font-bold text-sm uppercase tracking-wider">
+                    <Sparkles size={16} />
+                    Gemini AI 深度戰略
+                 </div>
+
+                 {aiAnalysis ? (
+                   <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 p-5 rounded-2xl border border-purple-500/30 animate-in fade-in duration-500">
+                      <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed whitespace-pre-line">
+                         {aiAnalysis}
+                      </div>
+                      <button
+                        onClick={() => fetchStrategy(selectedEvent)}
+                        className="mt-4 text-xs text-purple-400 flex items-center gap-1 hover:text-purple-300"
+                      >
+                        <RefreshCw size={12} /> 重新生成
+                      </button>
+                   </div>
+                 ) : (
+                   <div className="bg-slate-800/30 p-6 rounded-2xl border border-dashed border-slate-700 flex flex-col items-center justify-center text-center">
+                       <p className="text-slate-400 text-sm mb-4">
+                         想知道更詳細的歷史回測與進場點建議？<br/>讓 Gemini 3 Pro 為您進行深度分析。
+                       </p>
+                      {aiLoading ? (
+                        <div className="flex items-center gap-2 text-purple-400 bg-purple-500/10 px-6 py-3 rounded-xl">
+                           <Loader size={18} className="animate-spin" />
+                           <span className="font-bold text-sm">AI 分析師思考中...</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => fetchStrategy(selectedEvent)}
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-900/30 flex items-center gap-2 transition-all active:scale-95"
+                        >
+                          <Sparkles size={18} /> 生成 AI 戰略報告
+                        </button>
+                      )}
+                      {aiError && (
+                        <p className="text-rose-400 text-xs mt-3 flex items-center gap-1">
+                          <Info size={12} /> {aiError}
+                        </p>
+                      )}
+                   </div>
+                 )}
+              </div>
               <div className="h-6" />
             </div>
           </div>
         </div>
-      )}
-      
-      {/* AI Analysis Modal */}
-      {aiAnalysisModal && (
-        <AIAnalysisModal
-          type={aiAnalysisModal.type}
-          itemId={aiAnalysisModal.itemId}
-          itemData={aiAnalysisModal.itemData}
-          onClose={() => setAiAnalysisModal(null)}
-        />
       )}
     </div>
   );
