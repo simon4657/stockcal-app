@@ -22,10 +22,21 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/analyze/${type}/${itemId}`);
+      // 從 localStorage 讀取 API key
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+        throw new Error('請先在設定頁面輸入 Gemini API Key');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/analyze/${type}/${itemId}`, {
+        headers: {
+          'X-API-Key': apiKey
+        }
+      });
       
       if (!response.ok) {
-        throw new Error('AI 分析服務暫時無法使用');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'AI 分析服務暫時無法使用');
       }
       
       const data = await response.json();
@@ -47,17 +58,27 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
     setError(null);
     
     try {
+      // 從 localStorage 讀取 API key
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+        throw new Error('請先在設定頁面輸入 Gemini API Key');
+      }
+      
       const response = await fetch(
         `${API_BASE_URL}/api/analyze/${type}/${itemId}/regenerate`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+          },
           body: JSON.stringify({ feedback })
         }
       );
       
       if (!response.ok) {
-        throw new Error('重新生成失敗');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || '重新生成失敗');
       }
       
       const data = await response.json();
