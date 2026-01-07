@@ -30,11 +30,18 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
         throw new Error('請先在設定頁面輸入 Gemini API Key');
       }
       
+      // 設定 60 秒超時（Gemini 2.5 Pro 需要較長時間）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
       const response = await fetch(`${API_BASE_URL}/api/analyze/${type}/${itemId}`, {
         headers: {
           'X-API-Key': apiKey
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -66,6 +73,10 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
         throw new Error('請先在設定頁面輸入 Gemini API Key');
       }
       
+      // 設定 60 秒超時
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
       const response = await fetch(
         `${API_BASE_URL}/api/analyze/${type}/${itemId}/regenerate`,
         {
@@ -74,9 +85,12 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
             'Content-Type': 'application/json',
             'X-API-Key': apiKey
           },
-          body: JSON.stringify({ feedback })
+          body: JSON.stringify({ feedback }),
+          signal: controller.signal
         }
       );
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
