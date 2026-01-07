@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, Loader, AlertTriangle, RefreshCw, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://stockcal-api.onrender.com';
 
@@ -11,7 +13,7 @@ interface AIAnalysisProps {
 }
 
 export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisProps) {
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
@@ -40,7 +42,7 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
       }
       
       const data = await response.json();
-      setAnalysis(data.analysis);
+      setAnalysis(data.analysis); // Markdown 文本
     } catch (err: any) {
       setError(err.message || '分析失敗，請稍後再試');
     } finally {
@@ -82,7 +84,7 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
       }
       
       const data = await response.json();
-      setAnalysis(data.analysis);
+      setAnalysis(data.analysis); // Markdown 文本
       setFeedback('');
       setShowFeedback(false);
     } catch (err: any) {
@@ -94,7 +96,7 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 rounded-t-3xl sm:rounded-2xl border border-slate-700 w-full sm:max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      <div className="bg-slate-900 rounded-t-3xl sm:rounded-2xl border border-slate-700 w-full sm:max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
@@ -140,8 +142,9 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
           {loading && (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <Loader size={32} className="text-blue-400 animate-spin" />
-              <p className="text-slate-400 text-sm">AI 正在深度分析中...</p>
-              <p className="text-slate-500 text-xs">這可能需要 15-20 秒</p>
+              <p className="text-slate-400 text-sm">AI 正在深度思考中...</p>
+              <p className="text-slate-500 text-xs">使用 Gemini 2.5 Pro 進階思考模型</p>
+              <p className="text-slate-500 text-xs">這可能需要 25-35 秒</p>
             </div>
           )}
 
@@ -149,7 +152,7 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
           {error && (
             <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-start gap-3">
               <AlertTriangle size={20} className="text-rose-400 shrink-0 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="text-rose-400 font-medium mb-1">分析失敗</p>
                 <p className="text-rose-300/70 text-sm">{error}</p>
                 <button
@@ -162,302 +165,78 @@ export function AIAnalysisModal({ type, itemId, itemData, onClose }: AIAnalysisP
             </div>
           )}
 
-          {/* Analysis Result */}
+          {/* Analysis Result - Markdown 格式 */}
           {analysis && (
             <div className="space-y-4">
-              {/* Event Analysis */}
-              {type === 'event' && (
-                <>
-                  <AnalysisSection title="📊 事件影響">
-                    <div className="space-y-3">
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">短期影響（1-2週）</h5>
-                        <p className="text-sm text-slate-400">{analysis.event_impact?.short_term}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">中期影響（1-3個月）</h5>
-                        <p className="text-sm text-slate-400">{analysis.event_impact?.medium_term}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">長期影響（3個月以上）</h5>
-                        <p className="text-sm text-slate-400">{analysis.event_impact?.long_term}</p>
-                      </div>
-                    </div>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="📈 市場反應預測">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">預期波動</span>
-                        <span className="text-white font-medium">{analysis.market_reaction?.expected_volatility}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">市場情緒</span>
-                        <span className="text-white font-medium">{analysis.market_reaction?.sentiment}</span>
-                      </div>
-                      {analysis.market_reaction?.key_indicators && (
-                        <div>
-                          <p className="text-sm text-slate-400 mb-2">關鍵指標</p>
-                          <div className="flex flex-wrap gap-2">
-                            {analysis.market_reaction.key_indicators.map((indicator: string, i: number) => (
-                              <span key={i} className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-lg">
-                                {indicator}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="💡 操作策略">
-                    <div className="space-y-3">
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">事件前</h5>
-                        <p className="text-sm text-slate-400">{analysis.trading_strategy?.before_event}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">事件當天</h5>
-                        <p className="text-sm text-slate-400">{analysis.trading_strategy?.during_event}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">事件後</h5>
-                        <p className="text-sm text-slate-400">{analysis.trading_strategy?.after_event}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-rose-400 mb-1">⚠️ 風險控制</h5>
-                        <p className="text-sm text-slate-400">{analysis.trading_strategy?.risk_control}</p>
-                      </div>
-                    </div>
-                  </AnalysisSection>
-
-                  {analysis.key_stocks_to_watch && analysis.key_stocks_to_watch.length > 0 && (
-                    <AnalysisSection title="🎯 重點個股">
-                      <div className="space-y-3">
-                        {analysis.key_stocks_to_watch.map((stock: any, i: number) => (
-                          <div key={i} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-                            <div className="flex justify-between items-start mb-2">
-                              <h5 className="font-medium text-white">{stock.name}</h5>
-                              <span className={`text-xs px-2 py-1 rounded-lg ${
-                                stock.action === '買入' ? 'bg-emerald-500/20 text-emerald-400' :
-                                stock.action === '賣出' ? 'bg-rose-500/20 text-rose-400' :
-                                'bg-slate-600/20 text-slate-400'
-                              }`}>
-                                {stock.action}
-                              </span>
-                            </div>
-                            <p className="text-sm text-slate-400 mb-2">{stock.reason}</p>
-                            <p className="text-xs text-blue-400">{stock.target_price}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </AnalysisSection>
-                  )}
-                </>
-              )}
-
-              {/* Hot Trend Analysis */}
-              {type === 'hot-trend' && (
-                <>
-                  <AnalysisSection title="📊 技術面分析">
-                    <p className="text-sm text-slate-400">{analysis.technical_analysis}</p>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="💼 基本面分析">
-                    <p className="text-sm text-slate-400">{analysis.fundamental_analysis}</p>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="⚠️ 風險評估">
-                    <p className="text-sm text-slate-400">{analysis.risk_assessment}</p>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="💡 操作建議">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">進場點位</span>
-                        <span className="text-white">{analysis.trading_suggestion?.entry_point}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">停損設定</span>
-                        <span className="text-rose-400">{analysis.trading_suggestion?.stop_loss}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">停利目標</span>
-                        <span className="text-emerald-400">{analysis.trading_suggestion?.take_profit}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">持有期間</span>
-                        <span className="text-white">{analysis.trading_suggestion?.holding_period}</span>
-                      </div>
-                    </div>
-                  </AnalysisSection>
-
-                  {analysis.key_stocks && analysis.key_stocks.length > 0 && (
-                    <AnalysisSection title="🎯 重點個股">
-                      <div className="space-y-3">
-                        {analysis.key_stocks.map((stock: any, i: number) => (
-                          <div key={i} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-                            <div className="flex justify-between items-start mb-2">
-                              <h5 className="font-medium text-white">{stock.name}</h5>
-                              <span className={`text-xs px-2 py-1 rounded-lg ${
-                                stock.rating === '強力推薦' ? 'bg-emerald-500/20 text-emerald-400' :
-                                stock.rating === '推薦' ? 'bg-blue-500/20 text-blue-400' :
-                                'bg-slate-600/20 text-slate-400'
-                              }`}>
-                                {stock.rating}
-                              </span>
-                            </div>
-                            <p className="text-sm text-slate-400 mb-2">{stock.reason}</p>
-                            {stock.entry_price && (
-                              <p className="text-xs text-blue-400">建議進場: {stock.entry_price}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </AnalysisSection>
-                  )}
-                </>
-              )}
-
-              {/* Strategy Analysis */}
-              {type === 'strategy' && (
-                <>
-                  <AnalysisSection title="💡 策略原理">
-                    <p className="text-sm text-slate-400">{analysis.strategy_rationale}</p>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="📋 執行細節">
-                    <div className="space-y-3">
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">進場時機</h5>
-                        <p className="text-sm text-slate-400">{analysis.execution_details?.entry_timing}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">倉位配置</h5>
-                        <p className="text-sm text-slate-400">{analysis.execution_details?.position_sizing}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">出場策略</h5>
-                        <p className="text-sm text-slate-400">{analysis.execution_details?.exit_strategy}</p>
-                      </div>
-                    </div>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="⚠️ 風險控管">
-                    <div className="space-y-2">
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">最大虧損</h5>
-                        <p className="text-sm text-rose-400">{analysis.risk_management?.max_loss}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">對沖方法</h5>
-                        <p className="text-sm text-slate-400">{analysis.risk_management?.hedge_method}</p>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-medium text-slate-300 mb-1">警示訊號</h5>
-                        <p className="text-sm text-slate-400">{analysis.risk_management?.warning_signs}</p>
-                      </div>
-                    </div>
-                  </AnalysisSection>
-
-                  <AnalysisSection title="📊 歷史表現">
-                    <p className="text-sm text-slate-400 mb-2">{analysis.historical_performance}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-400">成功機率</span>
-                      <span className={`text-sm font-medium ${
-                        analysis.success_probability === '高' ? 'text-emerald-400' :
-                        analysis.success_probability === '中' ? 'text-blue-400' :
-                        'text-slate-400'
-                      }`}>
-                        {analysis.success_probability}
-                      </span>
-                    </div>
-                  </AnalysisSection>
-                </>
-              )}
-
-              {/* Confidence Level */}
-              {analysis.confidence_level && (
-                <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-400">分析信心度</span>
-                    <span className={`text-sm font-medium ${
-                      analysis.confidence_level === '高' ? 'text-emerald-400' :
-                      analysis.confidence_level === '中' ? 'text-blue-400' :
-                      'text-slate-400'
-                    }`}>
-                      {analysis.confidence_level}
-                    </span>
-                  </div>
+              {/* Markdown Content */}
+              <div className="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
+                <div className="prose prose-invert prose-slate max-w-none
+                  prose-headings:text-white prose-headings:font-bold
+                  prose-h1:text-2xl prose-h1:mb-4 prose-h1:mt-6
+                  prose-h2:text-xl prose-h2:mb-3 prose-h2:mt-5 prose-h2:text-blue-400
+                  prose-h3:text-lg prose-h3:mb-2 prose-h3:mt-4 prose-h3:text-blue-300
+                  prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-3
+                  prose-strong:text-white prose-strong:font-semibold
+                  prose-ul:text-slate-300 prose-ul:my-2
+                  prose-ol:text-slate-300 prose-ol:my-2
+                  prose-li:my-1
+                  prose-blockquote:border-l-blue-500 prose-blockquote:bg-slate-800/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r
+                  prose-code:text-blue-400 prose-code:bg-slate-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                  prose-pre:bg-slate-800 prose-pre:border prose-pre:border-slate-700
+                  prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300
+                  prose-table:border-collapse prose-table:w-full
+                  prose-th:bg-slate-800 prose-th:border prose-th:border-slate-700 prose-th:p-2 prose-th:text-left
+                  prose-td:border prose-td:border-slate-700 prose-td:p-2
+                ">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {analysis}
+                  </ReactMarkdown>
                 </div>
-              )}
+              </div>
 
               {/* Feedback Section */}
-              <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                {!showFeedback ? (
-                  <button
-                    onClick={() => setShowFeedback(true)}
-                    className="w-full text-sm text-slate-400 hover:text-slate-300 flex items-center justify-center gap-2"
-                  >
-                    <AlertTriangle size={16} />
-                    發現錯誤？點此回饋
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-slate-300">
-                      <AlertTriangle size={16} className="text-orange-400" />
-                      <span>請指出分析中的錯誤</span>
-                    </div>
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                <button
+                  onClick={() => setShowFeedback(!showFeedback)}
+                  className="w-full flex items-center justify-between text-left"
+                >
+                  <span className="text-sm font-medium text-slate-300">
+                    📝 發現分析錯誤？提供回饋重新生成
+                  </span>
+                  <RefreshCw size={16} className="text-slate-400" />
+                </button>
+                
+                {showFeedback && (
+                  <div className="mt-4 space-y-3">
                     <textarea
                       value={feedback}
                       onChange={(e) => setFeedback(e.target.value)}
-                      placeholder="例如：日期有誤、價位不合理、產業分析不正確等..."
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
-                      rows={3}
-                      maxLength={500}
+                      placeholder="例如：日期有誤，台積電法說會通常在1月中旬。目標價1100元太保守，建議上調至1200元。"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      rows={4}
                     />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setShowFeedback(false);
-                          setFeedback('');
-                        }}
-                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-sm transition-colors"
-                      >
-                        取消
-                      </button>
-                      <button
-                        onClick={regenerateAnalysis}
-                        disabled={loading || !feedback.trim()}
-                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        <RefreshCw size={16} />
-                        重新生成
-                      </button>
-                    </div>
+                    <button
+                      onClick={regenerateAnalysis}
+                      disabled={loading || !feedback.trim()}
+                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw size={16} />
+                      根據回饋重新生成分析
+                    </button>
                   </div>
                 )}
               </div>
 
               {/* Disclaimer */}
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-                <p className="text-xs text-orange-400/80">
-                  ⚠️ AI 分析僅供參考，不構成投資建議。投資有風險，請謹慎評估。
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+                <p className="text-xs text-amber-400/80">
+                  ⚠️ 本分析由 AI 生成，僅供參考，不構成投資建議。投資有風險，請謹慎評估。
                 </p>
               </div>
             </div>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function AnalysisSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-      <h4 className="text-sm font-bold text-white mb-3">{title}</h4>
-      {children}
     </div>
   );
 }
