@@ -903,55 +903,41 @@ export default function StockCalAndroid() {
   // 自選個股事件
   const [watchlistEvents, setWatchlistEvents] = useState<StockEvent[]>([]);
   
-  // 生成自選個股事件
+  // 使用 AI 搜尋獲取自選個股事件
   useEffect(() => {
-    const watchlist = JSON.parse(localStorage.getItem('stock_watchlist') || '[]');
-    if (watchlist.length === 0) {
-      setWatchlistEvents([]);
-      return;
-    }
-    
-    const events: StockEvent[] = [];
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    
-    // 為每個自選股生成示範事件（財報、除權息等）
-    watchlist.forEach((stock: string, index: number) => {
-      // 財報發佈（假設每月 15 日）
-      const earningsDate = new Date(year, month, 15 + index);
-      if (earningsDate.getMonth() === month) {
-        events.push({
-          id: `watchlist-earnings-${stock}`,
-          date: earningsDate.toISOString().split('T')[0],
-          title: `${stock} 財報發佈`,
-          market: 'TW',
-          type: 'corporate',
-          trend: 'neutral',
-          relatedStocks: [stock],
-          description: `${stock} 公布本季財報，關注獲利表現與未來展望。`,
-          strategy: '財報發佈前先觀望，待數據公布後再決定操作方向。'
-        });
+    const fetchWatchlistEvents = async () => {
+      const watchlist = JSON.parse(localStorage.getItem('stock_watchlist') || '[]');
+      if (watchlist.length === 0) {
+        setWatchlistEvents([]);
+        return;
       }
       
-      // 除權息（假設每月 25 日）
-      const dividendDate = new Date(year, month, 25 + (index % 5));
-      if (dividendDate.getMonth() === month && dividendDate.getDate() <= 31) {
-        events.push({
-          id: `watchlist-dividend-${stock}`,
-          date: dividendDate.toISOString().split('T')[0],
-          title: `${stock} 除權息日`,
-          market: 'TW',
-          type: 'corporate',
-          trend: 'neutral',
-          relatedStocks: [stock],
-          description: `${stock} 除權息交易日，欲參與配股配息者需在此日前持有。`,
-          strategy: '除權息前通常有填權行情，可提前佈局。'
+      try {
+        console.log('[StockCal] 開始獲取自選個股事件...', watchlist);
+        
+        const response = await fetch(`${API_BASE_URL}/api/watchlist/events`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ stocks: watchlist })
         });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[StockCal] 自選個股事件加載成功:', data.events.length, '個事件');
+          setWatchlistEvents(data.events || []);
+        } else {
+          console.error('[StockCal] 自選個股事件加載失敗:', response.status);
+          setWatchlistEvents([]);
+        }
+      } catch (error) {
+        console.error('[StockCal] 自選個股事件請求失敗:', error);
+        setWatchlistEvents([]);
       }
-    });
+    };
     
-    setWatchlistEvents(events);
+    fetchWatchlistEvents();
   }, []);
   
   // 從 API 獲取資料
