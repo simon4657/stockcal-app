@@ -592,6 +592,114 @@ const StrategyView = ({ strategies, onAnalyze }: { strategies: any[]; onAnalyze:
   );
 };
 
+// 自選個股管理組件
+const WatchlistManager = () => {
+  const [watchlist, setWatchlist] = useState<string[]>(() => {
+    const saved = localStorage.getItem('stock_watchlist');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newStock, setNewStock] = useState('');
+  const [showInput, setShowInput] = useState(false);
+
+  const addStock = () => {
+    const stock = newStock.trim();
+    if (!stock) {
+      alert('⚠️ 請輸入個股代號或名稱');
+      return;
+    }
+    if (watchlist.length >= 10) {
+      alert('⚠️ 最多只能添加 10 個自選股');
+      return;
+    }
+    if (watchlist.includes(stock)) {
+      alert('⚠️ 該個股已在自選清單中');
+      return;
+    }
+    const updated = [...watchlist, stock];
+    setWatchlist(updated);
+    localStorage.setItem('stock_watchlist', JSON.stringify(updated));
+    setNewStock('');
+    setShowInput(false);
+  };
+
+  const removeStock = (stock: string) => {
+    const updated = watchlist.filter(s => s !== stock);
+    setWatchlist(updated);
+    localStorage.setItem('stock_watchlist', JSON.stringify(updated));
+  };
+
+  return (
+    <div className="bg-slate-900 rounded-2xl p-4 mb-6 border border-slate-800">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Target size={18} className="text-blue-400" />
+          <h3 className="text-white font-bold text-sm">自選個股</h3>
+          <span className="text-[10px] text-slate-500">({watchlist.length}/10)</span>
+        </div>
+        {!showInput && watchlist.length < 10 && (
+          <button
+            onClick={() => setShowInput(true)}
+            className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+          >
+            + 添加
+          </button>
+        )}
+      </div>
+      
+      {showInput && (
+        <div className="mb-3 flex gap-2">
+          <input
+            type="text"
+            placeholder="例: 2330 或 台積電"
+            value={newStock}
+            onChange={(e) => setNewStock(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addStock()}
+            className="flex-1 bg-slate-800 text-white px-3 py-2 rounded-lg text-sm border border-slate-700 focus:border-blue-500 focus:outline-none"
+            autoFocus
+          />
+          <button
+            onClick={addStock}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            確定
+          </button>
+          <button
+            onClick={() => { setShowInput(false); setNewStock(''); }}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {watchlist.length === 0 ? (
+        <p className="text-xs text-slate-500 text-center py-4">還沒有自選個股，點擊「添加」開始追蹤</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {watchlist.map((stock) => (
+            <div
+              key={stock}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 flex items-center gap-2 group hover:border-blue-500 transition-colors"
+            >
+              <span className="text-sm text-white font-medium">{stock}</span>
+              <button
+                onClick={() => removeStock(stock)}
+                className="text-slate-500 hover:text-rose-400 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <p className="text-[10px] text-slate-500 mt-3">
+        💡 自選個股的重要事件（財報、除權息等）將顯示在月曆上
+      </p>
+    </div>
+  );
+};
+
 const SettingsView = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(true);
@@ -665,6 +773,9 @@ const SettingsView = () => {
           💡 如何取得 API Key: 前往 <a href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" className="text-purple-400 underline">ai.google.dev</a> 申請
         </p>
       </div>
+
+      {/* 自選個股管理 */}
+      <WatchlistManager />
 
       <div className="space-y-2">
         <button
@@ -789,6 +900,60 @@ export default function StockCalAndroid() {
   const [apiStrategies, setApiStrategies] = useState<any[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
   
+  // 自選個股事件
+  const [watchlistEvents, setWatchlistEvents] = useState<StockEvent[]>([]);
+  
+  // 生成自選個股事件
+  useEffect(() => {
+    const watchlist = JSON.parse(localStorage.getItem('stock_watchlist') || '[]');
+    if (watchlist.length === 0) {
+      setWatchlistEvents([]);
+      return;
+    }
+    
+    const events: StockEvent[] = [];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    
+    // 為每個自選股生成示範事件（財報、除權息等）
+    watchlist.forEach((stock: string, index: number) => {
+      // 財報發佈（假設每月 15 日）
+      const earningsDate = new Date(year, month, 15 + index);
+      if (earningsDate.getMonth() === month) {
+        events.push({
+          id: `watchlist-earnings-${stock}`,
+          date: earningsDate.toISOString().split('T')[0],
+          title: `${stock} 財報發佈`,
+          market: 'TW',
+          type: 'corporate',
+          trend: 'neutral',
+          relatedStocks: [stock],
+          description: `${stock} 公布本季財報，關注獲利表現與未來展望。`,
+          strategy: '財報發佈前先觀望，待數據公布後再決定操作方向。'
+        });
+      }
+      
+      // 除權息（假設每月 25 日）
+      const dividendDate = new Date(year, month, 25 + (index % 5));
+      if (dividendDate.getMonth() === month && dividendDate.getDate() <= 31) {
+        events.push({
+          id: `watchlist-dividend-${stock}`,
+          date: dividendDate.toISOString().split('T')[0],
+          title: `${stock} 除權息日`,
+          market: 'TW',
+          type: 'corporate',
+          trend: 'neutral',
+          relatedStocks: [stock],
+          description: `${stock} 除權息交易日，欲參與配股配息者需在此日前持有。`,
+          strategy: '除權息前通常有填權行情，可提前佈局。'
+        });
+      }
+    });
+    
+    setWatchlistEvents(events);
+  }, []);
+  
   // 從 API 獲取資料
   useEffect(() => {
     const fetchData = async () => {
@@ -849,7 +1014,9 @@ export default function StockCalAndroid() {
   }, []);
   
   // 強制使用 API 資料，只有在加載中時才使用預設資料
-  const events = apiLoading ? monthlyEvents : (apiEvents.length > 0 ? apiEvents : monthlyEvents);
+  const baseEvents = apiLoading ? monthlyEvents : (apiEvents.length > 0 ? apiEvents : monthlyEvents);
+  // 合併自選個股事件
+  const events = [...baseEvents, ...watchlistEvents];
   const hotTrends = apiLoading ? dailyHotTrends : (apiHotTrends.length > 0 ? apiHotTrends : dailyHotTrends);
   const strategies = apiLoading ? dailyStrategies : (apiStrategies.length > 0 ? apiStrategies : dailyStrategies);
 
